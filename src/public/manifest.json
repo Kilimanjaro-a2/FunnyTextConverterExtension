@@ -3,10 +3,9 @@
   "name": "Kusodekanizer",
   "description": "Converts a web page into a KUSODEKA WEBPAGE",
   "version": "1.0.0",
-  "content_scripts": [
-    {
-      "js": ["index.js"],
-      "css": ["global.css"]
-    }
-  ]
+  "background": {
+      "service_worker": "index.js"
+  },
+  "action": {},
+  "permissions": ["scripting", "activeTab"]
 }
