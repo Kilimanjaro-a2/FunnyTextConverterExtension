@@ -1,16 +1,5 @@
-chrome.runtime.onInstalled.addListener(async () => {
-  const result = await chrome.storage.sync.get(['username']);
-  
-  if (!result.username) {
-    chrome.tabs.create({
-      url: 'register.html'
-    });
-  } else {
-    chrome.action.setBadgeText({
-      text: 'OFF'
-    });
-  }
-});
+// グローバル変数として保存用のMapを定義
+const originalTextMap = new Map<number, { nodes: Text[], texts: string[] }>();
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) return;
@@ -22,7 +11,6 @@ chrome.action.onClicked.addListener(async (tab) => {
     });
     return;
   }
-  // const username = result.username;
 
   const prevState = await chrome.action.getBadgeText({ tabId: tab.id });
   const nextState = prevState === 'デカ' ? 'OFF' : 'デカ';
@@ -54,36 +42,18 @@ chrome.action.onClicked.addListener(async (tab) => {
               }
             }
           }
+
+          // 元のテキストを保存
+          window.originalNodes = textNodes;
+          window.originalTexts = texts;
         
           try {
-            // const processedTexts = await processTexts(texts);
-        
             const processTexts = () => {
-              try {
-                // const response = await fetch('https://your-api-endpoint', {
-                //   method: 'POST',
-                //   headers: {
-                //     'Content-Type': 'application/json',
-                //   },
-                //   body: JSON.stringify({ texts })
-                // });
-            
-                // if (!response.ok) {
-                //   throw new Error('API request failed');
-                // }
-            
-                // const result: ProcessedResult = await response.json();
-                // return result.processedTexts;
-                let processedTexts: string[] = [];
-                texts.forEach(_ => {
-                  processedTexts.push(`aaaaa`);
-                });
-                return processedTexts;
-            
-              } catch (error) {
-                console.error('API呼び出し中にエラーが発生しました:', error);
-                return ["AAA"];
-              }
+              let processedTexts: string[] = [];
+              texts.forEach(text => {
+                processedTexts.push(`${text}@@@@@@@`);
+              });
+              return processedTexts;
             }
             const processedTexts: string[] = await processTexts()
             if (processTexts != null) {
@@ -104,12 +74,19 @@ chrome.action.onClicked.addListener(async (tab) => {
       files: ['kusodeka.css'],
       target: { tabId: tab.id }
     });
+    // 元のテキストに戻す
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        if (window.originalNodes && window.originalTexts) {
+          window.originalNodes.forEach((node: Text, index: number) => {
+            node.textContent = window.originalTexts[index];
+          });
+        }
+      }
+    });
   }
   chrome.action.setBadgeText({
     text: nextState
   });
 });
-
-interface ProcessedResult {
-  processedTexts: string[];
-}
