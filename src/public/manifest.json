@@ -6,6 +6,11 @@
   "background": {
       "service_worker": "index.js"
   },
-  "action": {},
-  "permissions": ["scripting", "activeTab"]
+  "action": {
+  },
+  "permissions": ["scripting", "activeTab", "storage"],
+  "web_accessible_resources": [{
+    "resources": ["register.html"],
+    "matches": ["<all_urls>"]
+  }]
 }

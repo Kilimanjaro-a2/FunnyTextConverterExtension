@@ -9,6 +9,7 @@ export default defineConfig((opt) => {
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/index.ts'),
+          register: resolve(__dirname, 'src/register.ts') 
         },
         output: {
           entryFileNames: '[name].js',
