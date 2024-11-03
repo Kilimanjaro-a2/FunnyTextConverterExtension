@@ -4,7 +4,8 @@
   "description": "Converts a web page into a KUSODEKA WEBPAGE",
   "version": "1.0.0",
   "background": {
-      "service_worker": "index.js"
+      "service_worker": "index.js",
+      "type": "module"
   },
   "action": {
   },
@@ -12,5 +13,8 @@
   "web_accessible_resources": [{
     "resources": ["register.html"],
     "matches": ["<all_urls>"]
-  }]
+  }],
+  "host_permissions": [
+    "https://api.anthropic.com/*"
+  ]
 }
