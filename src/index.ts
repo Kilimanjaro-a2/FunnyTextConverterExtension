@@ -4,8 +4,8 @@ const originalTextMap = new Map<number, { nodes: Text[], texts: string[] }>();
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) return;
 
-  const result = await chrome.storage.sync.get(['username']);
-  if (!result.username) {
+  const result = await chrome.storage.sync.get(['apikey']);
+  if (!result.apikey) {
     chrome.tabs.create({
       url: 'register.html'
     });
@@ -21,7 +21,6 @@ chrome.action.onClicked.addListener(async (tab) => {
       target: { tabId: tab.id }
     });
 
-    
     const result = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: async () => {
@@ -54,11 +53,11 @@ chrome.action.onClicked.addListener(async (tab) => {
     });
 
     const rawTexts = result[0].result;
-    console.log(rawTexts);
     if (rawTexts == null) {
       return;
     }
 
+    const { apikey } = await chrome.storage.sync.get(['apikey']);
     const combinedText = rawTexts.join('\n---SPLIT---\n');
     const prompt = `以下の文章を大阪弁に変換してください。各文章は"---SPLIT---"で区切られています。
 変換後も同じ区切り文字を使用して返してください。
@@ -68,7 +67,7 @@ ${combinedText}`;
 
     console.log("prompt")
     console.log(prompt)
-    const convertedText: string = await callClaudeAPI(prompt)
+    const convertedText: string = await callClaudeAPI(prompt, apikey)
 
     console.log("result")
     console.log(convertedText)
@@ -137,14 +136,13 @@ ${combinedText}`;
   });
 });
 
-const CLAUDE_API_KEY = '';
 const API_URL = 'https://api.anthropic.com/v1/messages';
-async function callClaudeAPI(prompt: string) {
+async function callClaudeAPI(prompt: string, apiKey: string) {
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "x-api-key": CLAUDE_API_KEY,
+        "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
         "anthropic-dangerous-direct-browser-access": "true",

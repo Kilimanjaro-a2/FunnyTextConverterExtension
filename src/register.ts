@@ -1,15 +1,15 @@
 const submit = document.getElementById('submit');
 if(submit != null) {
   submit.addEventListener('click', async () => {
-    const element = document.getElementById('username') as HTMLInputElement
-    const username = element.value;
+    const element = document.getElementById('apikey') as HTMLInputElement
+    const apikey = element.value;
     
-    if (username.trim() === '') {
-        alert('ユーザー名を入力してください');
+    if (apikey.trim() === '') {
+        alert('register your claude api key');
         return;
     }
   
-    await chrome.storage.sync.set({ username: username });
+    await chrome.storage.sync.set({ apikey: apikey });
     
     chrome.action.setBadgeText({
         text: 'OFF'
