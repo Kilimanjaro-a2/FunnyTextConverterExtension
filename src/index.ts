@@ -59,11 +59,13 @@ chrome.action.onClicked.addListener(async (tab) => {
 
     const { apikey } = await chrome.storage.sync.get(['apikey']);
     const combinedText = rawTexts.join('\n---SPLIT---\n');
-    const prompt = `以下の文章を大阪弁に変換してください。各文章は"---SPLIT---"で区切られています。
+const prompt = `    
+以下の文章を大阪弁にしてください。各文章は"---SPLIT---"で区切られています。
 変換後も同じ区切り文字を使用して返してください。
-元の文章の意味を保ったまま、自然な大阪弁にしてください。
+元の文章の意味を保ったまま、各文章に対応するような自然な大阪弁にしてください。
 
 ${combinedText}`;
+
 
     console.log("prompt")
     console.log(prompt)
@@ -149,7 +151,7 @@ async function callClaudeAPI(prompt: string, apiKey: string) {
       },
       body: JSON.stringify({
         model: "claude-3-haiku-20240307",
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [
           {
             role: "user",
