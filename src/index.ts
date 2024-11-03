@@ -21,58 +21,100 @@ chrome.action.onClicked.addListener(async (tab) => {
       target: { tabId: tab.id }
     });
 
-    callClaudeAPI("今日の天気を教えて")
-      .then(response => console.log(response))
-      .catch(error => console.log(error));
-    // await chrome.scripting.executeScript({
-    //   target: { tabId: tab.id },
-    //   func: async () => {
-    //       const walker = document.createTreeWalker(
-    //         document.body,
-    //         NodeFilter.SHOW_TEXT,
-    //         null
-    //       );
+    
+    const result = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: async () => {
+          const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null
+          );
 
-    //       const textNodes: Text[] = [];
-    //       const texts: string[] = [];
+          const textNodes: Text[] = [];
+          const texts: string[] = [];
         
-    //       let node: Node | null;
-    //       while ((node = walker.nextNode())) {
-    //         if (node.nodeType === Node.TEXT_NODE) {
-    //           const text = node.textContent?.trim();
-    //           if (text) {
-    //             textNodes.push(node as Text);
-    //             texts.push(text);
-    //           }
-    //         }
-    //       }
+          let node: Node | null;
+          while ((node = walker.nextNode())) {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent?.trim();
+              if (text) {
+                textNodes.push(node as Text);
+                texts.push(text);
+              }
+            }
+          }
 
-    //       // 元のテキストを保存
-    //       window.originalNodes = textNodes;
-    //       window.originalTexts = texts;
+          // 元のテキストを保存
+          window.originalNodes = textNodes;
+          window.originalTexts = texts;
+
+          return texts;
+      }
+    });
+
+    const rawTexts = result[0].result;
+    console.log(rawTexts);
+    if (rawTexts == null) {
+      return;
+    }
+
+    const combinedText = rawTexts.join('\n---SPLIT---\n');
+    const prompt = `以下の文章を大阪弁に変換してください。各文章は"---SPLIT---"で区切られています。
+変換後も同じ区切り文字を使用して返してください。
+元の文章の意味を保ったまま、自然な大阪弁にしてください。
+
+${combinedText}`;
+
+    console.log("prompt")
+    console.log(prompt)
+    const convertedText: string = await callClaudeAPI(prompt)
+
+    console.log("result")
+    console.log(convertedText)
+      
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      args: [convertedText],
+      func: async (convertedText) => {
+        try {
+          const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null
+          );
+
+          const textNodes: Text[] = [];
+          const texts: string[] = [];
         
-    //       try {
-    //         const processTexts = () => {
-    //           let processedTexts: string[] = [];
-    //           texts.forEach(text => {
-    //             processedTexts.push(`${text}@@@@@@@`);
-    //           });
-    //           return processedTexts;
-    //         }
-    //         const processedTexts: string[] = await processTexts()
-    //         if (processTexts != null) {
-    //           processedTexts.forEach((newText: string, index: number) => {
-    //             const currentText = textNodes[index].textContent;
-    //             if (currentText && newText !== currentText) {
-    //               textNodes[index].textContent = newText;
-    //             }
-    //           });
-    //         }
-    //       } catch (error) {
-    //         console.error('テキスト処理中にエラーが発生しました:', error);
-    //       }
-    //   }
-    // });
+          let node: Node | null;
+          while ((node = walker.nextNode())) {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent?.trim();
+              if (text) {
+                textNodes.push(node as Text);
+                texts.push(text);
+              }
+            }
+          }
+
+          // const processedTexts: string[] = []
+          // texts.forEach(text => {
+          //   processedTexts.push(`${text}@@@@@@@`);
+          // });
+          const convertedTexts = convertedText.split('\n---SPLIT---\n')
+          convertedTexts.forEach((newText: string, index: number) => {
+            const currentText = textNodes[index].textContent;
+            if (currentText && newText !== currentText) {
+              textNodes[index].textContent = newText;
+            }
+          });
+          
+        } catch (error) {
+          console.error('テキスト処理中にエラーが発生しました:', error);
+        }
+      }
+    });
   } else if (nextState === 'OFF') {
     await chrome.scripting.removeCSS({
       files: ['kusodeka.css'],
@@ -99,7 +141,7 @@ const CLAUDE_API_KEY = '';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 async function callClaudeAPI(prompt: string) {
   try {
-    let response = fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "x-api-key": CLAUDE_API_KEY,
@@ -114,7 +156,7 @@ async function callClaudeAPI(prompt: string) {
           {
             role: "user",
             content: [
-              { type: "text", text: "Return a haiku about how great pelicans are" },
+              { type: "text", text: prompt },
             ],
           },
         ],
@@ -124,13 +166,13 @@ async function callClaudeAPI(prompt: string) {
     .then((data) => {
       console.log("Success")
       const haiku = data.content[0].text;
-      console.log(haiku);
+      return haiku;
     })
     .catch((error) => {
       console.error("Error:", error);
     });
     console.log(response)
-    return "aaa"
+    return response
   } catch (error) {
     console.error('Error calling Claude API:', error);
     throw error;
