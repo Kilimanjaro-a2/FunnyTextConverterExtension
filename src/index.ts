@@ -24,11 +24,36 @@ chrome.action.onClicked.addListener(async (tab) => {
     const result = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: async () => {
-          const walker = document.createTreeWalker(
-            document.body,
-            NodeFilter.SHOW_TEXT,
-            null
-          );
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          {
+            acceptNode: function(node) {
+              // 親要素をチェック
+              const parent = node.parentElement;
+              if (!parent) return NodeFilter.FILTER_REJECT;
+        
+              // 非表示要素を除外
+              const style = window.getComputedStyle(parent);
+              if (style.display === 'none' || style.visibility === 'hidden') {
+                return NodeFilter.FILTER_REJECT;
+              }
+        
+              // スクリプト、スタイル、コードブロックなどを除外
+              const tagName = parent.tagName.toLowerCase();
+              if (['script', 'style', 'code', 'pre'].includes(tagName)) {
+                return NodeFilter.FILTER_REJECT;
+              }
+        
+              // メタデータ関連の要素を除外
+              if (['meta', 'link', 'noscript'].includes(tagName)) {
+                return NodeFilter.FILTER_REJECT;
+              }
+        
+              return NodeFilter.FILTER_ACCEPT;
+            }
+          }
+        );
 
           const textNodes: Text[] = [];
           const texts: string[] = [];
@@ -76,7 +101,9 @@ chrome.action.onClicked.addListener(async (tab) => {
     
 以下の文章をクソデカ変換してください。各文章は"---SPLIT---"で区切られています。
 変換後も同じ区切り文字を使用して返してください。
-元の文章の意味を保ったまま、各文章に対応するような自然なクソデカ表現のみを返して下さい。
+元の文章の意味を保ったまま、自然なクソデカ表現を返してください。
+「以下が変換結果です」「以下、同様にクソデカ変換を続けます」のような案内は入れないでください。
+変換処理だけ行ってください。
 
 ${combinedText}`;
 
@@ -96,7 +123,32 @@ ${combinedText}`;
           const walker = document.createTreeWalker(
             document.body,
             NodeFilter.SHOW_TEXT,
-            null
+            {
+              acceptNode: function(node) {
+                // 親要素をチェック
+                const parent = node.parentElement;
+                if (!parent) return NodeFilter.FILTER_REJECT;
+          
+                // 非表示要素を除外
+                const style = window.getComputedStyle(parent);
+                if (style.display === 'none' || style.visibility === 'hidden') {
+                  return NodeFilter.FILTER_REJECT;
+                }
+          
+                // スクリプト、スタイル、コードブロックなどを除外
+                const tagName = parent.tagName.toLowerCase();
+                if (['script', 'style', 'code', 'pre'].includes(tagName)) {
+                  return NodeFilter.FILTER_REJECT;
+                }
+          
+                // メタデータ関連の要素を除外
+                if (['meta', 'link', 'noscript'].includes(tagName)) {
+                  return NodeFilter.FILTER_REJECT;
+                }
+          
+                return NodeFilter.FILTER_ACCEPT;
+              }
+            }
           );
 
           const textNodes: Text[] = [];
@@ -165,7 +217,7 @@ async function callClaudeAPI(prompt: string, apiKey: string) {
       },
       body: JSON.stringify({
         model: "claude-3-5-haiku-20241022",
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [
           {
             role: "user",
