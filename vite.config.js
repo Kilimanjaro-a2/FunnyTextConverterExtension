@@ -9,7 +9,9 @@ export default defineConfig((opt) => {
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/index.ts'),
-          register: resolve(__dirname, 'src/register.ts') 
+          register: resolve(__dirname, 'src/register.ts'),
+          prompt: resolve(__dirname, 'src/prompt.ts'),
+          requester: resolve(__dirname, 'src/requester.ts'),
         },
         output: {
           entryFileNames: '[name].js',
