@@ -1,11 +1,11 @@
-// グローバル変数として保存用のMapを定義
-const originalTextMap = new Map<number, { nodes: Text[], texts: string[] }>();
-
 chrome.action.onClicked.addListener(async (tab) => {
-  if (tab.id === undefined) return;
+  if (tab.id === undefined) {
+    return;
+  }
 
-  const result = await chrome.storage.sync.get(['apikey']);
-  if (!result.apikey) {
+  const { claudeApiKey } = await chrome.storage.sync.get<{claudeApiKey: string}>(['claudeApiKey']);
+  if (!claudeApiKey) {
+    // APIキーが設定されていない場合（初回起動時など）は、APIを登録するページを別タブで表示する
     chrome.tabs.create({
       url: 'register.html'
     });
@@ -82,7 +82,7 @@ chrome.action.onClicked.addListener(async (tab) => {
       return;
     }
 
-    const { apikey } = await chrome.storage.sync.get(['apikey']);
+    // const { claudeApiKey } = await chrome.storage.sync.get(['claudeApiKey']);
     const combinedText = rawTexts.join('\n---SPLIT---\n');
     const prompt = `
 あなたは「クソデカ表現変換機」です。ユーザーから与えられた文章をクソデカ変換します。クソデカ変換とは、物や現象についてクソデカい表現をつけることです。
@@ -108,13 +108,10 @@ chrome.action.onClicked.addListener(async (tab) => {
 ${combinedText}`;
 
 
-    console.log("prompt")
-    console.log(prompt)
-    const convertedText: string = await callClaudeAPI(prompt, apikey)
+    console.log(`Prompt: ${prompt}`)
+    const convertedText: string = await callClaudeAPI(prompt, claudeApiKey)
+    console.log(`Result: ${convertedText}`)
 
-    console.log("result")
-    console.log(convertedText)
-      
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       args: [convertedText],
@@ -165,10 +162,6 @@ ${combinedText}`;
             }
           }
 
-          // const processedTexts: string[] = []
-          // texts.forEach(text => {
-          //   processedTexts.push(`${text}@@@@@@@`);
-          // });
           const convertedTexts = convertedText.split('\n---SPLIT---\n')
           convertedTexts.forEach((newText: string, index: number) => {
             const currentText = textNodes[index].textContent;
@@ -205,9 +198,10 @@ ${combinedText}`;
 });
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL_NAME = "claude-3-5-haiku-20241022"
 async function callClaudeAPI(prompt: string, apiKey: string) {
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "x-api-key": apiKey,
@@ -216,7 +210,7 @@ async function callClaudeAPI(prompt: string, apiKey: string) {
         "anthropic-dangerous-direct-browser-access": "true",
       },
       body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
+        model: MODEL_NAME,
         max_tokens: 4096,
         messages: [
           {
@@ -230,7 +224,7 @@ async function callClaudeAPI(prompt: string, apiKey: string) {
     })
     .then((response) => response.json())
     .then((data) => {
-      console.log("Success")
+      console.log("Calling Claude API is Succeeded!")
       const haiku = data.content[0].text;
       return haiku;
     })

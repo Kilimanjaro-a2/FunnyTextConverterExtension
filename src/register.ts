@@ -1,15 +1,15 @@
 const submit = document.getElementById('submit');
 if(submit != null) {
   submit.addEventListener('click', async () => {
-    const element = document.getElementById('apikey') as HTMLInputElement
-    const apikey = element.value;
+    const element = document.getElementById('claudeApiKey') as HTMLInputElement
+    const claudeApiKey = element.value;
     
-    if (apikey.trim() === '') {
+    if (claudeApiKey.trim() === '') {
         alert('register your claude api key');
         return;
     }
   
-    await chrome.storage.sync.set({ apikey: apikey });
+    await chrome.storage.sync.set({ claudeApiKey: claudeApiKey });
     
     chrome.action.setBadgeText({
         text: 'OFF'
