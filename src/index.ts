@@ -1,6 +1,6 @@
 import { getPrompt, getTextDelimiter } from "./prompt";
 import { callLlm, isApiKeyRequired } from "./requester";
-import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection } from "./injection";
+import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection, insertCssInjection } from "./injection";
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) {
@@ -18,11 +18,6 @@ chrome.action.onClicked.addListener(async (tab) => {
   const nextState = prevState === 'デカ' ? 'OFF' : 'デカ';
 
   if (nextState === 'デカ') {
-    await chrome.scripting.insertCSS({
-      files: ['kusodeka.css'],
-      target: { tabId: tab.id }
-    });
-
     console.log("テキスト変換処理を実行します");
 
     const rawTexts: string[] = await retrieveTextInjection(tab); // through chrome.scripting
@@ -47,20 +42,20 @@ chrome.action.onClicked.addListener(async (tab) => {
 
     console.log("テキスト変換処理は正常に実行されました")
 
+    const isInserting = true;
+    await insertCssInjection(tab, isInserting); // through chrome.scripting
+
   } else if (nextState === 'OFF') {
-    let isSucceeded = false;
-
-    await chrome.scripting.removeCSS({
-      files: ['kusodeka.css'],
-      target: { tabId: tab.id }
-    });
-
-    isSucceeded = await restoreOriginalTextsInjection(tab); // through chrome.scripting
+    const isSucceeded = await restoreOriginalTextsInjection(tab); // through chrome.scripting
     if(!isSucceeded) {
       console.error("テキスト復元処理に失敗しました");
       return;
     }
+
+    const isInserting = false;
+    await insertCssInjection(tab, isInserting); // through chrome.scripting
   }
+
   chrome.action.setBadgeText({
     text: nextState
   });

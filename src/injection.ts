@@ -1,5 +1,15 @@
+/**
+ * 
+ * chrome.scripting.executeScriptを実行する処理群
+ * 
+ */
 
-
+/**
+ * 開いているタブから、人間が読むためのテキストを捜査して取得する
+ * 
+ * @param tab 
+ * @returns 
+ */
 export async function retrieveTextInjection(tab: chrome.tabs.Tab): Promise<string[]> {
   if (tab == undefined || tab.id == undefined) {
     console.error("渡されたtabが不正")
@@ -71,9 +81,15 @@ export async function retrieveTextInjection(tab: chrome.tabs.Tab): Promise<strin
   return rawTexts;
 }
 
+/**
+ * 開いているページのテキスト群を、変換したテキストで置き換える
+ * 
+ * @param tab 
+ * @returns 
+ */
 export async function replaceTextInjection(
   tab: chrome.tabs.Tab,
-  convertedText:string,
+  convertedText: string,
   textDelimiter: string
 ): Promise<boolean>  {
   if (tab == undefined || tab.id == undefined) {
@@ -152,6 +168,12 @@ export async function replaceTextInjection(
   return true;
 }
 
+/**
+ * 開いているページのテキスト群を、変換前のテキストに復元する
+ * 
+ * @param tab 
+ * @returns 
+ */
 export async function restoreOriginalTextsInjection(tab: chrome.tabs.Tab): Promise<boolean> {
   if (tab == undefined || tab.id == undefined) {
     console.error("渡されたtabが不正")
@@ -174,6 +196,26 @@ export async function restoreOriginalTextsInjection(tab: chrome.tabs.Tab): Promi
       }
     }
   });
-  
+
   return results[0].result === true;
+}
+
+export async function insertCssInjection(tab: chrome.tabs.Tab, isInserting: boolean): Promise<boolean> {
+  if (tab == undefined || tab.id == undefined) {
+    console.error("渡されたtabが不正")
+    return false;
+  }
+
+  if (isInserting) {
+    await chrome.scripting.insertCSS({
+      files: ['kusodeka.css'],
+      target: { tabId: tab.id }
+    });
+  } else {
+    await chrome.scripting.removeCSS({
+      files: ['kusodeka.css'],
+      target: { tabId: tab.id }
+    });
+  }
+  return true;
 }
