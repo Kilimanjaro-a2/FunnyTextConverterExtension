@@ -12,7 +12,7 @@ export async function isApiKeyRequired() {
   return !hasKey
 }
 
-export async function callClaudeAPI(prompt: string) {
+export async function callLlm(prompt: string): Promise<string> {
   try {
     const apiKey = await getApiKey();
     const response = await fetch(API_URL, {
@@ -49,6 +49,6 @@ export async function callClaudeAPI(prompt: string) {
     return response
   } catch (error) {
     console.error('Error calling Claude API:', error);
-    throw error;
+    return "";
   }
 }

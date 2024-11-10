@@ -1,13 +1,15 @@
 
 
-export async function getRawTextsFromViewingTab(tab: chrome.tabs.Tab): Promise<string[]> {
-  if (tab.id === undefined) {
+export async function retrieveTextInjection(tab: chrome.tabs.Tab): Promise<string[]> {
+  if (tab == undefined || tab.id == undefined) {
+    console.error("渡されたtabが不正")
     return [];
   }
 
   const result = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: async () => {
+      // 関数に抜き出したいが、chrome.scripting.executeScript内にはシリアライズされたオブジェクトしか渡せないため直書きする
       const walker = document.createTreeWalker(
         document.body,
         NodeFilter.SHOW_TEXT,
@@ -69,13 +71,14 @@ export async function getRawTextsFromViewingTab(tab: chrome.tabs.Tab): Promise<s
   return rawTexts;
 }
 
-export async function replaceText(
+export async function replaceTextInjection(
   tab: chrome.tabs.Tab,
   convertedText:string,
   textDelimiter: string
-): Promise<string[]>  {
-  if (tab.id === undefined) {
-    return [];
+): Promise<boolean>  {
+  if (tab == undefined || tab.id == undefined) {
+    console.error("渡されたtabが不正")
+    return false;
   }
 
   await chrome.scripting.executeScript({
@@ -83,6 +86,7 @@ export async function replaceText(
     args: [convertedText, textDelimiter],
     func: async (convertedText, splitStrings) => {
       try {
+        // 関数に抜き出したいが、chrome.scripting.executeScript内にはシリアライズされたオブジェクトしか渡せないため直書きする
         const walker = document.createTreeWalker(
           document.body,
           NodeFilter.SHOW_TEXT,
@@ -136,14 +140,14 @@ export async function replaceText(
           }
         });
 
-        return convertedTexts;
+        return true;
         
       } catch (error) {
         console.error('テキスト処理中にエラーが発生しました:', error);
-        return []
+        return false
       }
     }
   });
 
-  return [];
+  return true;
 }

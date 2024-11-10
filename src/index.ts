@@ -1,14 +1,14 @@
 import { getPrompt, getTextDelimiter } from "./prompt";
-import { callClaudeAPI, isApiKeyRequired } from "./requester";
-import { getRawTextsFromViewingTab, replaceText } from "./injection";
+import { callLlm, isApiKeyRequired } from "./requester";
+import { retrieveTextInjection, replaceTextInjection } from "./injection";
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) {
+    console.error("渡されたtabが不正")
     return;
   }
 
-  const isApiKeyEmpty = await isApiKeyRequired();
-  if (isApiKeyEmpty) {
+  if (await isApiKeyRequired()) {
     // APIキーが設定されていない場合（初回起動時など）は、APIを登録するページを別タブで表示する
     chrome.tabs.create({ url: 'register.html' });
     return;
@@ -23,13 +23,29 @@ chrome.action.onClicked.addListener(async (tab) => {
       target: { tabId: tab.id }
     });
 
-    const rawTexts: string[] = await getRawTextsFromViewingTab(tab);
-    const textDelimiter = getTextDelimiter();
-    const prompt = getPrompt(rawTexts.join(textDelimiter));
-    const convertedText: string = await callClaudeAPI(prompt);
-    console.log(`Result: ${convertedText}`);
+    console.log("テキスト変換処理を実行します");
 
-    await replaceText(tab, convertedText, textDelimiter);
+    const rawTexts: string[] = await retrieveTextInjection(tab); // through chrome.scripting
+    if(rawTexts.length === 0) {
+      console.error("テキスト取得に失敗しました");
+      return;
+    }
+
+    const textDelimiter: string = getTextDelimiter();
+    const prompt: string = getPrompt(rawTexts.join(textDelimiter));
+    const convertedText: string = await callLlm(prompt);
+    if(convertedText == "") {
+      console.error("テキスト変換に失敗しました");
+      return;
+    }
+
+    const isSucceeded: boolean = await replaceTextInjection(tab, convertedText, textDelimiter); // through chrome.scripting
+    if(!isSucceeded) {
+      console.error("テキスト置き換え処理に失敗しました");
+      return;
+    }
+
+    console.log("テキスト変換処理は正常に実行されました")
 
   } else if (nextState === 'OFF') {
     await chrome.scripting.removeCSS({
