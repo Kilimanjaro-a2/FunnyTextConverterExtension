@@ -1,8 +1,20 @@
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL_NAME = "claude-3-5-haiku-20241022"
-export async function callClaudeAPI(prompt: string, apiKey: string) {
+
+export async function getApiKey(): Promise<string> {
+  const { claudeApiKey } = await chrome.storage.sync.get<{claudeApiKey: string}>(['claudeApiKey']);
+  return claudeApiKey;
+}
+
+export async function isApiKeyRequired() {
+  const hasKey = await getApiKey();
+  return !hasKey
+}
+
+export async function callClaudeAPI(prompt: string) {
   try {
+    const apiKey = await getApiKey();
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {

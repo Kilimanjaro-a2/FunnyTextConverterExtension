@@ -1,13 +1,13 @@
 import { getPrompt, getSplitStrings } from "./prompt";
-import { callClaudeAPI } from "./requester";
+import { callClaudeAPI, isApiKeyRequired } from "./requester";
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) {
     return;
   }
 
-  const { claudeApiKey } = await chrome.storage.sync.get<{claudeApiKey: string}>(['claudeApiKey']);
-  if (!claudeApiKey) {
+  const isApiKeyEmpty = await isApiKeyRequired();
+  if (isApiKeyEmpty) {
     // APIキーが設定されていない場合（初回起動時など）は、APIを登録するページを別タブで表示する
     chrome.tabs.create({ url: 'register.html' });
     return;
@@ -87,7 +87,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     const prompt = getPrompt(combinedText);
 
     console.log(`Prompt: ${prompt}`)
-    const convertedText: string = await callClaudeAPI(prompt, claudeApiKey)
+    const convertedText: string = await callClaudeAPI(prompt)
     console.log(`Result: ${convertedText}`)
 
     await chrome.scripting.executeScript({
