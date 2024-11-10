@@ -12,6 +12,7 @@ export default defineConfig((opt) => {
           register: resolve(__dirname, 'src/register.ts'),
           prompt: resolve(__dirname, 'src/prompt.ts'),
           requester: resolve(__dirname, 'src/requester.ts'),
+          injection: resolve(__dirname, 'src/injection.ts'),
         },
         output: {
           entryFileNames: '[name].js',
