@@ -151,3 +151,29 @@ export async function replaceTextInjection(
 
   return true;
 }
+
+export async function restoreOriginalTextsInjection(tab: chrome.tabs.Tab): Promise<boolean> {
+  if (tab == undefined || tab.id == undefined) {
+    console.error("渡されたtabが不正")
+    return false;
+  }
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      try {
+        if (window.originalNodes && window.originalTexts) {
+          window.originalNodes.forEach((node: Text, index: number) => {
+            node.textContent = window.originalTexts[index];
+          });
+        }
+        return true;
+      } catch (error) {
+        console.error('テキスト復元処理中にエラーが発生しました:', error);
+        return false;
+      }
+    }
+  });
+  
+  return results[0].result === true;
+}

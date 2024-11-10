@@ -1,6 +1,6 @@
 import { getPrompt, getTextDelimiter } from "./prompt";
 import { callLlm, isApiKeyRequired } from "./requester";
-import { retrieveTextInjection, replaceTextInjection } from "./injection";
+import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection } from "./injection";
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) {
@@ -48,21 +48,18 @@ chrome.action.onClicked.addListener(async (tab) => {
     console.log("テキスト変換処理は正常に実行されました")
 
   } else if (nextState === 'OFF') {
+    let isSucceeded = false;
+
     await chrome.scripting.removeCSS({
       files: ['kusodeka.css'],
       target: { tabId: tab.id }
     });
-    // 元のテキストに戻す
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        if (window.originalNodes && window.originalTexts) {
-          window.originalNodes.forEach((node: Text, index: number) => {
-            node.textContent = window.originalTexts[index];
-          });
-        }
-      }
-    });
+
+    isSucceeded = await restoreOriginalTextsInjection(tab); // through chrome.scripting
+    if(!isSucceeded) {
+      console.error("テキスト復元処理に失敗しました");
+      return;
+    }
   }
   chrome.action.setBadgeText({
     text: nextState
