@@ -1,12 +1,16 @@
 import { getPrompt, getTextDelimiter } from "./prompt";
 import { callLlm, isApiKeyRequired } from "./requester";
-import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection, insertCssInjection } from "./injection";
+import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection, insertCssInjection, registerAlert } from "./injection";
+
+
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) {
     console.error("渡されたtabが不正")
     return;
   }
+
+  registerAlert(tab, "これはテストメッセージです")
 
   if (await isApiKeyRequired()) {
     // APIキーが設定されていない場合（初回起動時など）は、APIを登録するページを別タブで表示する
