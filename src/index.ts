@@ -10,8 +10,6 @@ chrome.action.onClicked.addListener(async (tab) => {
     return;
   }
 
-  registerAlert(tab, "これはテストメッセージです")
-
   if (await isApiKeyRequired()) {
     // APIキーが設定されていない場合（初回起動時など）は、APIを登録するページを別タブで表示する
     chrome.tabs.create({ url: 'register.html' });
@@ -22,11 +20,11 @@ chrome.action.onClicked.addListener(async (tab) => {
   const nextState = prevState === 'デカ' ? 'OFF' : 'デカ';
 
   if (nextState === 'デカ') {
-    console.log("テキスト変換処理を実行します");
+    registerAlert(tab, "テキスト変換処理を実行します", false)
 
     const rawTexts: string[] = await retrieveTextInjection(tab); // through chrome.scripting
     if(rawTexts.length === 0) {
-      console.error("テキスト取得に失敗しました");
+      registerAlert(tab, "テキスト取得に失敗しました")
       return;
     }
 
@@ -34,17 +32,17 @@ chrome.action.onClicked.addListener(async (tab) => {
     const prompt: string = getPrompt(rawTexts.join(textDelimiter));
     const convertedText: string = await callLlm(prompt);
     if(convertedText == "") {
-      console.error("テキスト変換に失敗しました");
+      registerAlert(tab, "テキスト変換に失敗しました")
       return;
     }
 
     const isSucceeded: boolean = await replaceTextInjection(tab, convertedText, textDelimiter); // through chrome.scripting
     if(!isSucceeded) {
-      console.error("テキスト置き換え処理に失敗しました");
+      registerAlert(tab, "テキスト置き換え処理に失敗しました")
       return;
     }
 
-    console.log("テキスト変換処理は正常に実行されました")
+    registerAlert(tab, "テキスト変換処理は正常に実行されました", false)
 
     const isInserting = true;
     await insertCssInjection(tab, isInserting); // through chrome.scripting
@@ -52,7 +50,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   } else if (nextState === 'OFF') {
     const isSucceeded = await restoreOriginalTextsInjection(tab); // through chrome.scripting
     if(!isSucceeded) {
-      console.error("テキスト復元処理に失敗しました");
+      registerAlert(tab, "テキスト復元処理に失敗しました")
       return;
     }
 

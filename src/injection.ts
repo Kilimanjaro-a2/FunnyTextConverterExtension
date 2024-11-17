@@ -233,12 +233,16 @@ export async function insertCssInjection(tab: chrome.tabs.Tab, isInserting: bool
  * @param tab 
  * @returns 
  */
-export async function registerAlert(tab: chrome.tabs.Tab, message: string): Promise<void> {
+export async function registerAlert(tab: chrome.tabs.Tab, message: string, isError: boolean = true, showsAlert: boolean = true): Promise<void> {
   if (tab.id === undefined) {
     console.error("渡されたtabが不正")
     return;
   }
   try {
+    if(isError) {
+      // TODO: CSSのだし分け
+    }
+
     await chrome.scripting.insertCSS({
       target: { tabId: tab.id },
       css: `
@@ -322,6 +326,10 @@ export async function registerAlert(tab: chrome.tabs.Tab, message: string): Prom
         document.body.insertBefore(container, document.body.firstChild);
       }
     });
+
+    if(showsAlert) {
+      console.log(message);
+    }
   } catch (err) {
     console.error('Failed to execute:', err);
   }
