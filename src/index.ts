@@ -2,15 +2,16 @@ import { getPrompt, getTextDelimiter } from "./prompt";
 import { callLlm, isApiKeyRequired } from "./requester";
 import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection, insertCssInjection, toastError, toastInfo } from "./injection";
 
+let isProcessing = false;
 
-let isConerting = false;
-
+// 別タブに切り替えたとき
 chrome.tabs.onActivated.addListener((activeInfo) => {
   chrome.tabs.get(activeInfo.tabId, (_) => {
     chrome.action.setBadgeText({ text: "OFF" });
   });
 });
 
+// ページ遷移したとき
 chrome.webNavigation.onCompleted.addListener((details) => {
   if (details.frameId === 0) {
     chrome.tabs.get(details.tabId, (_) => {
@@ -19,21 +20,22 @@ chrome.webNavigation.onCompleted.addListener((details) => {
   }
 });
 
+// バッジをクリックしたとき
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) {
     console.error("渡されたtabが不正")
     return;
   }
-  if (isConerting) {
+  if (isProcessing) {
     toastError(tab, "現在クソデカ変換の最中です！")
     return;
   }
-  isConerting = true;
+  isProcessing = true;
 
   if (await isApiKeyRequired()) {
     // APIキーが設定されていない場合（初回起動時など）は、APIを登録するページを別タブで表示する
     chrome.tabs.create({ url: 'register.html' });
-    isConerting = false;
+    isProcessing = false;
     return;
   }
 
@@ -46,7 +48,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     const rawTexts: string[] = await retrieveTextInjection(tab); // through chrome.scripting
     if(rawTexts.length === 0) {
       toastError(tab, "テキスト取得に失敗しました")
-      isConerting = false;
+      isProcessing = false;
       return;
     }
 
@@ -55,14 +57,14 @@ chrome.action.onClicked.addListener(async (tab) => {
     const convertedText: string = await callLlm(prompt);
     if(convertedText == "") {
       toastError(tab, "テキスト変換に失敗しました")
-      isConerting = false;
+      isProcessing = false;
       return;
     }
 
     const isSucceeded: boolean = await replaceTextInjection(tab, convertedText, textDelimiter); // through chrome.scripting
     if(!isSucceeded) {
       toastError(tab, "テキスト置き換え処理に失敗しました")
-      isConerting = false;
+      isProcessing = false;
       return;
     }
 
@@ -75,7 +77,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     const isSucceeded = await restoreOriginalTextsInjection(tab); // through chrome.scripting
     if(!isSucceeded) {
       toastError(tab, "テキスト復元処理に失敗しました")
-      isConerting = false;
+      isProcessing = false;
       return;
     }
 
@@ -83,8 +85,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     await insertCssInjection(tab, isInserting); // through chrome.scripting
   }
 
-  isConerting = false;
-
+  isProcessing = false;
   chrome.action.setBadgeText({
     text: nextState
   });
