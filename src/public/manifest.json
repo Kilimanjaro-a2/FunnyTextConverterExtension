@@ -9,7 +9,7 @@
   },
   "action": {
   },
-  "permissions": ["scripting", "activeTab", "storage"],
+  "permissions": ["scripting", "activeTab", "storage", "webNavigation"],
   "web_accessible_resources": [{
     "resources": ["register.html"],
     "matches": ["<all_urls>"]
