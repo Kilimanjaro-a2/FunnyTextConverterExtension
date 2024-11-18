@@ -303,7 +303,6 @@ export async function registerAlert(tab: chrome.tabs.Tab, message: string, isErr
         const existingAlert = document.querySelector('.extension-alert-container');
         if (existingAlert) {
           existingAlert.remove();
-          return;
         }
 
         // コンテナを作成

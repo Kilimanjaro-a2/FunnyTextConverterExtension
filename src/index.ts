@@ -25,8 +25,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     return;
   }
   if (isConerting) {
-    registerAlert(tab, "現在クソデカ変換の最中です！", false)
-    console.error("現在クソデカ変換の最中です！")
+    registerAlert(tab, "現在クソデカ変換の最中です！")
     return;
   }
   isConerting = true;
