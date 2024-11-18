@@ -1,6 +1,6 @@
 import { getPrompt, getTextDelimiter } from "./prompt";
 import { callLlm, isApiKeyRequired } from "./requester";
-import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection, insertCssInjection, registerAlert } from "./injection";
+import { retrieveTextInjection, replaceTextInjection, restoreOriginalTextsInjection, insertCssInjection, toastError, toastInfo } from "./injection";
 
 
 let isConerting = false;
@@ -25,7 +25,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     return;
   }
   if (isConerting) {
-    registerAlert(tab, "現在クソデカ変換の最中です！")
+    toastError(tab, "現在クソデカ変換の最中です！")
     return;
   }
   isConerting = true;
@@ -41,11 +41,11 @@ chrome.action.onClicked.addListener(async (tab) => {
   const nextState = prevState === 'デカ' ? 'OFF' : 'デカ';
 
   if (nextState === 'デカ') {
-    registerAlert(tab, "テキスト変換処理を実行します", false)
+    toastInfo(tab, "テキスト変換処理を実行します")
 
     const rawTexts: string[] = await retrieveTextInjection(tab); // through chrome.scripting
     if(rawTexts.length === 0) {
-      registerAlert(tab, "テキスト取得に失敗しました")
+      toastError(tab, "テキスト取得に失敗しました")
       isConerting = false;
       return;
     }
@@ -54,19 +54,19 @@ chrome.action.onClicked.addListener(async (tab) => {
     const prompt: string = getPrompt(rawTexts.join(textDelimiter));
     const convertedText: string = await callLlm(prompt);
     if(convertedText == "") {
-      registerAlert(tab, "テキスト変換に失敗しました")
+      toastError(tab, "テキスト変換に失敗しました")
       isConerting = false;
       return;
     }
 
     const isSucceeded: boolean = await replaceTextInjection(tab, convertedText, textDelimiter); // through chrome.scripting
     if(!isSucceeded) {
-      registerAlert(tab, "テキスト置き換え処理に失敗しました")
+      toastError(tab, "テキスト置き換え処理に失敗しました")
       isConerting = false;
       return;
     }
 
-    registerAlert(tab, "テキスト変換処理は正常に実行されました", false)
+    toastInfo(tab, "テキスト変換処理は正常に実行されました")
 
     const isInserting = true;
     await insertCssInjection(tab, isInserting); // through chrome.scripting
@@ -74,7 +74,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   } else if (nextState === 'OFF') {
     const isSucceeded = await restoreOriginalTextsInjection(tab); // through chrome.scripting
     if(!isSucceeded) {
-      registerAlert(tab, "テキスト復元処理に失敗しました")
+      toastError(tab, "テキスト復元処理に失敗しました")
       isConerting = false;
       return;
     }

@@ -227,22 +227,122 @@ export async function insertCssInjection(tab: chrome.tabs.Tab, isInserting: bool
   return true;
 }
 
+
 /**
- * アラートを登録する
+ * Infoトーストを出現させる
  * 
  * @param tab 
  * @returns 
  */
-export async function registerAlert(tab: chrome.tabs.Tab, message: string, isError: boolean = true, showsAlert: boolean = true): Promise<void> {
+export async function toastInfo(tab: chrome.tabs.Tab, message: string, showsConsoleLog: boolean = true): Promise<void> {
   if (tab.id === undefined) {
     console.error("渡されたtabが不正")
     return;
   }
   try {
-    if(isError) {
-      // TODO: CSSのだし分け
-    }
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      css: `
+        .extension-alert-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          display: flex;
+          justify-content: center;
+          z-index: 9999;
+          padding: 8px;
+        }
 
+        .extension-alert {
+          position: relative;
+          width: 500px;
+          background-color: #ADD8E6;
+          color: blue;
+          padding: 12px 40px 12px 12px;
+          text-align: center;
+          border-radius: 4px;
+          border: 1px solid blue;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .extension-alert-close {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          border: none;
+          background: none;
+          cursor: pointer;
+          padding: 5px;
+          font-size: 16px;
+          color: #721c24;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+        }
+
+        .extension-alert-close:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+      `
+    });
+
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      args: [message],
+      func: (message) => {
+        // 既存のアラートがあれば削除
+        const existingAlert = document.querySelector('.extension-alert-container');
+        if (existingAlert) {
+          existingAlert.remove();
+        }
+
+        // コンテナを作成
+        const container = document.createElement('div');
+        container.className = 'extension-alert-container';
+
+        // アラートを作成
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'extension-alert';
+        alertDiv.textContent = message;
+        
+        // 閉じるボタンを追加
+        const closeButton = document.createElement('button');
+        closeButton.className = 'extension-alert-close';
+        closeButton.innerHTML = '✕';
+        closeButton.onclick = () => container.remove();
+        
+        alertDiv.appendChild(closeButton);
+        container.appendChild(alertDiv);
+        document.body.insertBefore(container, document.body.firstChild);
+      }
+    });
+
+    if(showsConsoleLog) {
+      console.log(message);
+    }
+  } catch (err) {
+    console.error('Failed to execute:', err);
+  }
+}
+
+/**
+ * Errorトーストを出現させる
+ * 
+ * @param tab 
+ * @returns 
+ */
+export async function toastError(tab: chrome.tabs.Tab, message: string, showsConsoleError: boolean = true): Promise<void> {
+  if (tab.id === undefined) {
+    console.error("渡されたtabが不正")
+    return;
+  }
+  try {
     await chrome.scripting.insertCSS({
       target: { tabId: tab.id },
       css: `
@@ -326,10 +426,11 @@ export async function registerAlert(tab: chrome.tabs.Tab, message: string, isErr
       }
     });
 
-    if(showsAlert) {
-      console.log(message);
+    if(showsConsoleError) {
+      console.error(message);
     }
   } catch (err) {
     console.error('Failed to execute:', err);
   }
 }
+
