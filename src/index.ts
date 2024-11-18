@@ -85,8 +85,11 @@ chrome.action.onClicked.addListener(async (tab) => {
     await insertCssInjection(tab, isInserting); // through chrome.scripting
   }
 
-  isProcessing = false;
-  chrome.action.setBadgeText({
-    text: nextState
-  });
+  // isProcessingがtrueのままだったら正常に終了している
+  if (isProcessing) {
+    isProcessing = false;
+    chrome.action.setBadgeText({
+      text: nextState
+    });
+  }
 });
