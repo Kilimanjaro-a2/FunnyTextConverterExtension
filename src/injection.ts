@@ -46,32 +46,44 @@ export async function retrieveTextInjection(tab: chrome.tabs.Tab): Promise<strin
               return NodeFilter.FILTER_REJECT;
             }
       
+            // ヘッダー、フッター、ナビゲーション、サイドバーを除外
+            if (['header', 'footer', 'nav', 'aside'].includes(tagName)) {
+              return NodeFilter.FILTER_REJECT;
+            }
+      
+            // 記事、メイン、セクション要素を優先
+            if (['article', 'main', 'section'].includes(tagName)) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
+
             return NodeFilter.FILTER_ACCEPT;
           }
         }
       );
 
-        const textNodes: Text[] = [];
-        const texts: string[] = [];
-      
-        let node: Node | null;
-        while ((node = walker.nextNode())) {
-          if (node.nodeType === Node.TEXT_NODE) {
-            const text = node.textContent?.trim();
-            if (text) {
-              textNodes.push(node as Text);
-              texts.push(text);
-            }
+      const textNodes: Text[] = [];
+      const texts: string[] = [];
+    
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent?.trim();
+          if (text) {
+            textNodes.push(node as Text);
+            texts.push(text);
           }
         }
+      }
 
-        // 元のテキストを保存
-        window.originalNodes = textNodes;
-        window.originalTexts = texts;
+      // 元のテキストを保存
+      window.originalNodes = textNodes;
+      window.originalTexts = texts;
 
-        return texts;
+      return texts;
     }
   });
+
+  console.log(result[0].result);
 
   const rawTexts = result[0].result;
   if (rawTexts == null) {
@@ -127,6 +139,16 @@ export async function replaceTextInjection(
               // メタデータ関連の要素を除外
               if (['meta', 'link', 'noscript'].includes(tagName)) {
                 return NodeFilter.FILTER_REJECT;
+              }
+        
+              // ヘッダー、フッター、ナビゲーション、サイドバーを除外
+              if (['header', 'footer', 'nav', 'aside'].includes(tagName)) {
+                return NodeFilter.FILTER_REJECT;
+              }
+        
+              // 記事、メイン、セクション要素を優先
+              if (['article', 'main', 'section'].includes(tagName)) {
+                return NodeFilter.FILTER_ACCEPT;
               }
         
               return NodeFilter.FILTER_ACCEPT;

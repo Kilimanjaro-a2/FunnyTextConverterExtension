@@ -25,7 +25,7 @@ export async function callLlm(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: MODEL_NAME,
-        max_tokens: 4096,
+        max_tokens: 8192,
         messages: [
           {
             role: "user",
