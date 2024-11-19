@@ -26,5 +26,5 @@ return `
 }
 
 export function getTextDelimiter(): string {
-  return '@DLM@';
+  return '{/}';
 }

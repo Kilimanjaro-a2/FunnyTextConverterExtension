@@ -43,29 +43,54 @@ chrome.action.onClicked.addListener(async (tab) => {
   const nextState = prevState === 'デカ' ? 'OFF' : 'デカ';
 
   if (nextState === 'デカ') {
-    toastInfo(tab, "テキスト変換処理を実行します")
+    toastInfo(tab, "テキスト変換処理を実行中です...")
 
-    const rawTexts: string[] = await retrieveTextInjection(tab); // through chrome.scripting
-    if(rawTexts.length === 0) {
-      toastError(tab, "テキスト取得に失敗しました")
-      isProcessing = false;
-      return;
-    }
+    let looping = true;
+    let currentTryCount = 0;
+    let currentIndex = 0;
+    const maxCount = 120;
+    while(looping) {
+      if (currentTryCount >= 3) { // 文字数が多すぎるときループが終わらないのを防ぐ
+        break;
+      }
 
-    const textDelimiter: string = getTextDelimiter();
-    const prompt: string = getPrompt(rawTexts.join(textDelimiter));
-    const convertedText: string = await callLlm(prompt);
-    if(convertedText == "") {
-      toastError(tab, "テキスト変換に失敗しました")
-      isProcessing = false;
-      return;
-    }
+      const rawTexts: string[] = await retrieveTextInjection(tab, currentIndex, maxCount); // through chrome.scripting
+      if(rawTexts.length === 0) {
+        isProcessing = false;
+        looping = false;
+        if (currentTryCount == 0) {
+          // 最初のトライで失敗したときはエラーを出す
+          toastError(tab, "テキスト取得に失敗しました")
+          return;
+        } else {
+          // この場合、単にWebページ全体の走査を完了したとき
+          break;
+        }
+      }
 
-    const isSucceeded: boolean = await replaceTextInjection(tab, convertedText, textDelimiter); // through chrome.scripting
-    if(!isSucceeded) {
-      toastError(tab, "テキスト置き換え処理に失敗しました")
-      isProcessing = false;
-      return;
+      const textDelimiter: string = getTextDelimiter();
+      const prompt: string = getPrompt(rawTexts.join(textDelimiter));
+      const convertedText: string = await callLlm(prompt);
+      if(convertedText == "") {
+        toastError(tab, "テキスト変換に失敗しました")
+        isProcessing = false;
+        looping = false;
+        return;
+      }
+  
+      const isSucceeded: boolean = await replaceTextInjection(tab, convertedText, textDelimiter, currentIndex); // through chrome.scripting
+      if(!isSucceeded) {
+        toastError(tab, "テキスト置き換え処理に失敗しました")
+        isProcessing = false;
+        looping = false;
+        return;
+      }
+
+      currentIndex += rawTexts.length;
+      currentTryCount++;
+
+      console.log("index: ", currentIndex)
+      console.log("try:", currentTryCount)
     }
 
     toastInfo(tab, "テキスト変換処理は正常に実行されました")

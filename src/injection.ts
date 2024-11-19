@@ -10,7 +10,7 @@
  * @param tab 
  * @returns 
  */
-export async function retrieveTextInjection(tab: chrome.tabs.Tab): Promise<string[]> {
+export async function retrieveTextInjection(tab: chrome.tabs.Tab, currentIndex: number, maxCount: number): Promise<string[]> {
   if (tab == undefined || tab.id == undefined) {
     console.error("渡されたtabが不正")
     return [];
@@ -79,18 +79,27 @@ export async function retrieveTextInjection(tab: chrome.tabs.Tab): Promise<strin
       window.originalNodes = textNodes;
       window.originalTexts = texts;
 
-      return texts;
+      return texts
     }
   });
-
-  console.log(result[0].result);
 
   const rawTexts = result[0].result;
   if (rawTexts == null) {
     return [];
   }
 
-  return rawTexts;
+  function getElementsFromIndex(
+    arr: string[],
+    currentIndex: number,
+    maxCount: number
+  ): string[] {
+    if (currentIndex >= arr.length) {
+      return [];
+    }
+    return arr.slice(currentIndex, Math.min(currentIndex + maxCount, arr.length));
+  }
+
+  return getElementsFromIndex(rawTexts, currentIndex, maxCount);
 }
 
 /**
@@ -102,7 +111,8 @@ export async function retrieveTextInjection(tab: chrome.tabs.Tab): Promise<strin
 export async function replaceTextInjection(
   tab: chrome.tabs.Tab,
   convertedText: string,
-  textDelimiter: string
+  textDelimiter: string,
+  currentIndex: number
 ): Promise<boolean>  {
   if (tab == undefined || tab.id == undefined) {
     console.error("渡されたtabが不正")
@@ -111,8 +121,8 @@ export async function replaceTextInjection(
 
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    args: [convertedText, textDelimiter],
-    func: async (convertedText, splitStrings) => {
+    args: [convertedText, textDelimiter, currentIndex],
+    func: async (convertedText, textDelimiter, currentIndex) => {
       try {
         // 関数に抜き出したいが、chrome.scripting.executeScript内にはシリアライズされたオブジェクトしか渡せないため直書きする
         const walker = document.createTreeWalker(
@@ -170,11 +180,15 @@ export async function replaceTextInjection(
           }
         }
 
-        const convertedTexts = convertedText.split(splitStrings)
+        const currentIndexAsNumber = currentIndex as number
+        const convertedTextAsString = convertedText as string
+        const textDelimiterAsString = textDelimiter as string
+
+        const convertedTexts: string[] = convertedTextAsString.split(textDelimiterAsString)
         convertedTexts.forEach((newText: string, index: number) => {
-          const currentText = textNodes[index].textContent;
+          const currentText = textNodes[index + currentIndexAsNumber].textContent;
           if (currentText && newText !== currentText) {
-            textNodes[index].textContent = newText;
+            textNodes[index + currentIndexAsNumber].textContent = newText;
           }
         });
 
